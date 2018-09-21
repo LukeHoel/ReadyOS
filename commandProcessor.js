@@ -48,7 +48,7 @@ function processCommand(command){
       break;
       default:
         //prints unknown command
-        extraCommands(splitCommand);
+        extraCommands(splitCommand || command);
       break;
     }
   }
