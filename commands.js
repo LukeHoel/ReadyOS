@@ -91,3 +91,6 @@ var mvOrcp = function(sourceStr, destStr, isCopy){
   echo(notFound);
 }
 }
+var extraCommands = function(){
+  echo("Unrecognized command \"" + splitCommand[0] + "\"");
+}

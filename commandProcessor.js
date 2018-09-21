@@ -47,10 +47,8 @@ function processCommand(command){
         }
       break;
       default:
-        if(extraCommands){
-          extraCommands(splitCommand);
-        }
-        echo("Unrecognized command \"" + splitCommand[0] + "\"");
+        //prints unknown command
+        extraCommands(splitCommand);
       break;
     }
   }
