@@ -19,7 +19,7 @@ var mkdirOrTouch = function(str, isDir){
       }
     }
   }else{
-    echo("Not a directory");
+    echo("File already exists, or is not a directory ");
   }
 }
 var cd = function(str){
