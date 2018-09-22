@@ -46,6 +46,11 @@ function processCommand(command){
           mkdirOrTouch(splitCommand[i], false);
         }
       break;
+      case("exec"):
+        for(var i = 1; i < splitCommand.length; i++){
+          exec(splitCommand[i]);
+        }
+      break;
       default:
         //prints unknown command
         extraCommands(splitCommand || command);
