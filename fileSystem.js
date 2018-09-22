@@ -14,6 +14,6 @@ function pwd(){
   }
   return ret;
 }
-pathAndUsername = function(){
+path = function(){
   return "[" + pwd() + "]"
 }

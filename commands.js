@@ -1,6 +1,9 @@
 var echo = function(str){
   console.log(str);
 }
+var fileSystemChanged = function(){
+  //called when file system is changed... override something here in implementation
+}
 var mkdirOrTouch = function(str, isDir){
   var oldDir = fileSystem.pwd;
   //split path and new name
@@ -11,7 +14,8 @@ var mkdirOrTouch = function(str, isDir){
         echo("Directory \""+ str +"\" already exists");
       }else{
         split.dir.children[split.endSeg] = newFile(split.dir,isDir);
-        echo(pathAndUsername() + (isDir ? " mkdir ": " touch ") + str);
+        echo(path() + (isDir ? " mkdir ": " touch ") + str);
+        fileSystemChanged();
       }
     }
   }else{
@@ -57,12 +61,13 @@ var ls = function(str){
   angular.forEach(keys,function(key){
     ret += key + " ";
   });
-  echo(ret || pathAndUsername() + " ls " + (str || "/"));
+  echo(ret || path() + " ls " + (str || "/"));
 }
 var rm = function(str){
   var dir = splitDirAndEndSeg(str);
   if(dir.dir.parentDir){
     delete dir.dir.parentDir.children[dir.endSeg];
+    fileSystemChanged();
   }else{
     echo(notFound);
   }
@@ -71,6 +76,7 @@ var rm = function(str){
 var rmByObj = function(dir){
     var name = getMyKeyName(dir);
     delete dir.parentDir.children[name];
+    fileSystemChanged();
 }
 var mvOrcp = function(sourceStr, destStr, isCopy){
   var source = dirAtPath(sourceStr);
@@ -86,6 +92,7 @@ var mvOrcp = function(sourceStr, destStr, isCopy){
         //so long, stray folder!
         rmByObj(source);
       }
+      fileSystemChanged();
     }
 }else{
   echo(notFound);
