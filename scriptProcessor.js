@@ -2,20 +2,21 @@ var processScript = function(script){
   //pass to tokenizer
   var tokenizedScript = scriptTokenizer(script);
   //pass tokens to parser
-  try{
-    var parsedScript = tokenParser(tokenizedScript);
-  }catch(error){
-  echo(error.message);
-  }
+  var parsedScript = tokenParser(tokenizedScript);
+  // try{
+  //   var parsedScript = tokenParser(tokenizedScript);
+  // }catch(error){
+  // echo(error.message);
+  // }
 }
 var scriptTokenizer = function(script){
   var tokens = [];
   //where we define keywords for the language
   var keyWords = [
+    {type: "STRING", ex:"\"(.*?)\""},
     {type: "FUNCTION", ex:"function"},
     {type: "IF", ex:"if"},
     {type: "ELSE", ex:"else"},
-    {type: "PRINT", ex:"print"},
     {type: "LBRACE", ex:"\\{"},
     {type: "RBRACE", ex:"\\}"},
     {type: "LPAREN",ex:"\\("},
@@ -28,15 +29,14 @@ var scriptTokenizer = function(script){
     {type: "GREATER",ex:"\\>"},
     {type: "LESSER",ex:"\\<"},
     {type: "NOT",ex:"\\!"},
-    {type: "DOUBLE_QUOTE", ex:"\""},
     {type: "PLUS", ex:"\\+"},
     {type: "MINUS", ex:"\\-"},
     {type: "MULTIPLY", ex:"\\*"},
     {type: "DIVIDE", ex:"\\/"},
     {type: "MODULO", ex:"\\%"},
     {type: "EMPTY", ex:"\/s"}, //exclude empty
-    {type: "NUMBER", ex:"\\d+"},
     {type: "NAME", ex:"[a-zA-Z_][a-zA-Z0-9_]*"},//put last so we don't false positive other keywords
+    {type: "NUMBER", ex:"\\d+"},
   ];
   //assemble regular expression
   var regEx = "("
@@ -78,7 +78,7 @@ var tokenParser = function(tokens){
   while(token){
     //function name and parameters
     if(!tempFunction){
-      tempFunction = {name: assertType(nextToken(), ["NAME"]).value, parameters: [], tokens:[]};
+      tempFunction = {name: assertType(nextToken(), ["NAME"]).value, parameters: [], tokens:[], blocks:[]};
       assertType(nextToken(),["LPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
       var next = assertType(nextToken(), ["NAME", "RPAREN"]);
       var more = next.type === "NAME";
@@ -114,12 +114,38 @@ var tokenParser = function(tokens){
         }
       }
     }
-    token = nextToken(tokenIterator);
+    token = nextToken();
   }
   if(numOpenBrackets > 0){
     throw new SyntaxError("Reached end of file while searching for end of function");
   }
-  console.log(functions);
+  functions.forEach(function(func){
+    tokenIterator = {tokens:func.tokens, currentToken:0};
+    token = nextToken();
+    while(token){
+      switch(token.type){
+        case("NAME")://function call
+          var temp = {name: token.value, type: "METHOD_CALL", arguments : [] }
+          assertType(nextToken(),["LPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
+          var next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN"]);
+          var more = next.type !== "RPAREN";
+          //loop through and get the parameter tokens out
+          while(more){
+            temp.arguments.push(next);
+            next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN", "COMMA"]);
+            more = next.type === "COMMA";
+            //get the next parameter name ready
+            if(more){next = assertType(nextToken(), ["STRING","NUMBER","NAME"]);}
+          }
+          endIndex = token.currentToken;
+          assertType(nextToken(), ["SEMICOLON"]);
+          func.blocks.push(temp);
+        break;
+      }
+      token = nextToken();
+    }
+    delete func["tokens"];
+  });
 }
 var nextToken = function(){
   return tokenIterator.tokens[tokenIterator.currentToken ++];
