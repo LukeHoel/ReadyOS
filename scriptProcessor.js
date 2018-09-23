@@ -138,12 +138,18 @@ var tokenParser = function(tokens){
   });
   console.log(functions);
 }
+//groups of inputs
+var arthemetic = ["PLUS","MINUS","MULTIPLY","DIVIDE","MODULO"];
 var parseStatement = function(token,parent){
   var node = {name: "", type: "", children : []};
   switch(token.type){
     case("NAME")://either a variable reference or a function call
       node.name = token.value;
-      assertType(nextToken(),["LPAREN","COMMA","RPAREN","EQUAL"]);//open parenthesis needs to be here, we don't need to check its value though...
+      if(token.isOp){
+        nextToken();//math operations break the usual flow of parsing, so go back so we can get back to normal
+        delete token["isOp"];
+      }
+      assertType(nextToken(),["LPAREN","COMMA","RPAREN","EQUAL"].concat(arthemetic));//open parenthesis needs to be here, we don't need to check its value though...
       //check if is function call or variable identifier
       var action = tokenIterator.tokens[tokenIterator.currentToken-1].type;
       if(action === "LPAREN"){
@@ -160,16 +166,12 @@ var parseStatement = function(token,parent){
           if(more){next = assertType(nextToken(), ["STRING","NUMBER","NAME"]);}
         }
         endIndex = token.currentToken;
-        return node;
       }else if(action === "EQUAL"){
         node.type = "VARIABLE_ASSIGNMENT";
         constructStatement(node);
-        return node;
-      }
-      else{
+      }else{
         lastToken();
         node.type = "VARIABLE_IDENTIFIER";
-        return node;
       }
     break;
     case("DOT"):
@@ -179,20 +181,30 @@ var parseStatement = function(token,parent){
       if((prev.type == "FUNCTION_CALL" && prev.returnType == "OBJECT") || prev.type == "OBJECT")
       node.type = "ATTRIBUTE_ACCESSOR";
       node.name = assertType(nextToken(),["NAME"]).value;
-      return node;//points up to previous statement or variable
+      //points up to previous statement or variable
     break;
     case("RETURN"):
       //for return statements, we only allow simple variable references (no function calls)
       node.type = token.type;
       constructStatement(node);
       delete node["name"];
-      return node;
     break;
     default:
       node.name = token.value;
       node.type = token.type;
-      return node;
     break;
+  }
+  //split arthemetic up down here so we catch all statements
+  var after = currentToken();//start by getting the next token
+  if(after && arthemetic.includes(after.type)){
+    var operation = {type:after.type,children:[node]};
+    nextToken();
+    var current = currentToken();
+    current.isOp = true;
+    operation.children.push(parseStatement(current,operation));
+    return operation;
+  }else{
+    return node;
   }
 }
 var constructStatement = function(node){
@@ -200,6 +212,9 @@ var constructStatement = function(node){
   var next = nextToken();
   node.children.push(parseStatement(next,node));
   assertType(nextToken(),["RPAREN"]);
+}
+var currentToken = function(){
+  return tokenIterator.tokens[tokenIterator.currentToken];
 }
 var nextToken = function(){
   return tokenIterator.tokens[tokenIterator.currentToken ++];
