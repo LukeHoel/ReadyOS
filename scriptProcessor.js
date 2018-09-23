@@ -14,7 +14,10 @@ var scriptTokenizer = function(script){
   //where we define keywords for the language
   var keyWords = [
     {type: "STRING", ex:"\"(.*?)\""},
-    {type: "FUNCTION", ex:"function"},
+    {type: "RETURN", ex:"return"},
+    {type: "RET_VOID", ex:"void"},
+    {type: "RET_INT", ex:"^int"},
+    {type: "RET_STRING", ex:"^string"},
     {type: "IF", ex:"if"},
     {type: "ELSE", ex:"else"},
     {type: "LBRACE", ex:"\\{"},
@@ -23,7 +26,6 @@ var scriptTokenizer = function(script){
     {type: "RPAREN",ex:"\\)"},
     {type: "TERNARY",ex:"\\?"},
     {type: "COLON",ex:"\\:"},
-    {type: "SEMICOLON",ex:"\\;"},
     {type: "COMMA", ex:"\\,"},
     {type: "DOT", ex:"\\."},
     {type: "EQUAL",ex:"\\="},
@@ -79,7 +81,12 @@ var tokenParser = function(tokens){
   while(token){
     //function name and parameters
     if(!tempFunction){
-      tempFunction = {name: assertType(nextToken(), ["NAME"]).value, parameters: [], tokens:[], children:[]};
+      tempFunction = {returnType: (assertType(tokenIterator.tokens[tokenIterator.currentToken-1],["RET_VOID","RET_INT","RET_STRING"])).type,
+      name: assertType(nextToken(), ["NAME"]).value,
+      parameters: [],
+      tokens:[],
+      children:[]};
+
       assertType(nextToken(),["LPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
       var next = assertType(nextToken(), ["NAME", "RPAREN"]);
       var more = next.type === "NAME";
@@ -134,11 +141,12 @@ var tokenParser = function(tokens){
 var parseStatement = function(token,parent){
   var node = {name: "", type: "", children : []};
   switch(token.type){
-    case("NAME"):
+    case("NAME")://either a variable reference or a function call
       node.name = token.value;
-      assertType(nextToken(),["LPAREN","COMMA","RPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
+      assertType(nextToken(),["LPAREN","COMMA","RPAREN","EQUAL"]);//open parenthesis needs to be here, we don't need to check its value though...
       //check if is function call or variable identifier
-      if(tokenIterator.tokens[tokenIterator.currentToken-1].type === "LPAREN"){
+      var action = tokenIterator.tokens[tokenIterator.currentToken-1].type;
+      if(action === "LPAREN"){
         node.type = "FUNCTION_CALL";
         var next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN"]);
         var more = next.type !== "RPAREN";
@@ -153,24 +161,45 @@ var parseStatement = function(token,parent){
         }
         endIndex = token.currentToken;
         return node;
-      }else{
+      }else if(action === "EQUAL"){
+        node.type = "VARIABLE_ASSIGNMENT";
+        constructStatement(node);
+        return node;
+      }
+      else{
         lastToken();
         node.type = "VARIABLE_IDENTIFIER";
         return node;
       }
     break;
     case("DOT"):
+      //make sure we are putting a variable accessor on an object of some kind...
+      //shouldn't do anything yet since we don't have objects but hey why not
+      var prev = parent.children[parent.children.length -1];
+      if((prev.type == "FUNCTION_CALL" && prev.returnType == "OBJECT") || prev.type == "OBJECT")
       node.type = "ATTRIBUTE_ACCESSOR";
       node.name = assertType(nextToken(),["NAME"]).value;
       return node;//points up to previous statement or variable
     break;
-    case("SEMICOLON"):
+    case("RETURN"):
+      //for return statements, we only allow simple variable references (no function calls)
+      node.type = token.type;
+      constructStatement(node);
+      delete node["name"];
+      return node;
+    break;
     default:
       node.name = token.value;
       node.type = token.type;
       return node;
     break;
   }
+}
+var constructStatement = function(node){
+  assertType(nextToken(),["LPAREN"]);
+  var next = nextToken();
+  node.children.push(parseStatement(next,node));
+  assertType(nextToken(),["RPAREN"]);
 }
 var nextToken = function(){
   return tokenIterator.tokens[tokenIterator.currentToken ++];
