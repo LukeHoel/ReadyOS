@@ -25,6 +25,7 @@ var scriptTokenizer = function(script){
     {type: "COLON",ex:"\\:"},
     {type: "SEMICOLON",ex:"\\;"},
     {type: "COMMA", ex:"\\,"},
+    {type: "DOT", ex:"\\."},
     {type: "EQUAL",ex:"\\="},
     {type: "GREATER",ex:"\\>"},
     {type: "LESSER",ex:"\\<"},
@@ -78,7 +79,7 @@ var tokenParser = function(tokens){
   while(token){
     //function name and parameters
     if(!tempFunction){
-      tempFunction = {name: assertType(nextToken(), ["NAME"]).value, parameters: [], tokens:[], blocks:[]};
+      tempFunction = {name: assertType(nextToken(), ["NAME"]).value, parameters: [], tokens:[], children:[]};
       assertType(nextToken(),["LPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
       var next = assertType(nextToken(), ["NAME", "RPAREN"]);
       var more = next.type === "NAME";
@@ -122,33 +123,60 @@ var tokenParser = function(tokens){
   functions.forEach(function(func){
     tokenIterator = {tokens:func.tokens, currentToken:0};
     token = nextToken();
-    while(token){
-      switch(token.type){
-        case("NAME")://function call
-          var temp = {name: token.value, type: "METHOD_CALL", arguments : [] }
-          assertType(nextToken(),["LPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
-          var next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN"]);
-          var more = next.type !== "RPAREN";
-          //loop through and get the parameter tokens out
-          while(more){
-            temp.arguments.push(next);
-            next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN", "COMMA"]);
-            more = next.type === "COMMA";
-            //get the next parameter name ready
-            if(more){next = assertType(nextToken(), ["STRING","NUMBER","NAME"]);}
-          }
-          endIndex = token.currentToken;
-          assertType(nextToken(), ["SEMICOLON"]);
-          func.blocks.push(temp);
-        break;
-      }
+    while(token){//different starting character types of expressions
+      func.children.push(parseStatement(token,func));
       token = nextToken();
     }
     delete func["tokens"];
   });
+  console.log(functions);
+}
+var parseStatement = function(token,parent){
+  var node = {name: "", type: "", children : []};
+  switch(token.type){
+    case("NAME"):
+      node.name = token.value;
+      assertType(nextToken(),["LPAREN","COMMA","RPAREN"]);//open parenthesis needs to be here, we don't need to check its value though...
+      //check if is function call or variable identifier
+      if(tokenIterator.tokens[tokenIterator.currentToken-1].type === "LPAREN"){
+        node.type = "FUNCTION_CALL";
+        var next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN"]);
+        var more = next.type !== "RPAREN";
+        //loop through and get the parameter tokens out
+        while(more){
+          //yay recursion
+          node.children.push(parseStatement(next,node));
+          next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN", "COMMA"]);
+          more = next.type === "COMMA";
+          //get the next parameter name ready
+          if(more){next = assertType(nextToken(), ["STRING","NUMBER","NAME"]);}
+        }
+        endIndex = token.currentToken;
+        return node;
+      }else{
+        lastToken();
+        node.type = "VARIABLE_IDENTIFIER";
+        return node;
+      }
+    break;
+    case("DOT"):
+      node.type = "ATTRIBUTE_ACCESSOR";
+      node.name = assertType(nextToken(),["NAME"]).value;
+      return node;//points up to previous statement or variable
+    break;
+    case("SEMICOLON"):
+    default:
+      node.name = token.value;
+      node.type = token.type;
+      return node;
+    break;
+  }
 }
 var nextToken = function(){
   return tokenIterator.tokens[tokenIterator.currentToken ++];
+}
+var lastToken = function(){
+  return tokenIterator.tokens[tokenIterator.currentToken --];
 }
 //pass in possible characters, throw error if none match
 var assertType = function(token, types){
@@ -159,6 +187,21 @@ var assertType = function(token, types){
   if(match){
     return token;
   }else{
-    throw new SyntaxError("Unexpected character \'" + token.value + "\'");
+    //SHOW THE SURROUNDING CHARACTERS FOR CONTEXT
+    var howManyAround = 3;
+    var index = tokenIterator.currentToken - 1;
+    var ret = "";
+    var i = 0;
+    tokenIterator.tokens.forEach(function(tok){
+      if(Math.abs(i - index) < howManyAround){
+        if(i == index){
+          ret += "\'" + tok.value + "\' ";
+        }else{
+          ret += tok.value + " ";
+        }
+        i ++;
+      }
+    });
+    throw new SyntaxError("Unexpected character \'" + token.value + "\' in " + ret + ". Expected one of these types: " + types);
   }
 }

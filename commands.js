@@ -104,5 +104,5 @@ var extraCommands = function(){
 var compile = function(str){
   //send the file found to the scriptProcessor
   processScript(dirAtPath(str,"dir").content);
-  echo(path() + "compile" + str);
+  echo(path() + " compile " + str);
 }
