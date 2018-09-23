@@ -101,7 +101,7 @@ var mvOrcp = function(sourceStr, destStr, isCopy){
 var extraCommands = function(){
   echo("Unrecognized command \"" + splitCommand[0] + "\"");
 }
-var exec = function(str){
+var compile = function(str){
   //send the file found to the scriptProcessor
   processScript(dirAtPath(str,"dir").content);
 }

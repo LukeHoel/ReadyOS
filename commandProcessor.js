@@ -46,9 +46,9 @@ function processCommand(command){
           mkdirOrTouch(splitCommand[i], false);
         }
       break;
-      case("exec"):
+      case("compile"):
         for(var i = 1; i < splitCommand.length; i++){
-          exec(splitCommand[i]);
+          compile(splitCommand[i]);
         }
       break;
       default:
