@@ -2,12 +2,11 @@ var processScript = function(script){
   //pass to tokenizer
   var tokenizedScript = scriptTokenizer(script);
   //pass tokens to parser
-  var parsedScript = tokenParser(tokenizedScript);
-  // try{
-  //   var parsedScript = tokenParser(tokenizedScript);
-  // }catch(error){
-  // echo(error.message);
-  // }
+  try{
+    return tokenParser(tokenizedScript);
+  }catch(error){
+    echo(error.message);
+  }
 }
 var scriptTokenizer = function(script){
   var tokens = [];
@@ -136,7 +135,7 @@ var tokenParser = function(tokens){
     }
     delete func["tokens"];
   });
-  console.log(functions);
+  return functions;
 }
 //groups of inputs
 var arthemetic = ["PLUS","MINUS","MULTIPLY","DIVIDE","MODULO"];

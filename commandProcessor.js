@@ -47,8 +47,20 @@ function processCommand(command){
         }
       break;
       case("compile"):
-        for(var i = 1; i < splitCommand.length; i++){
-          compile(splitCommand[i]);
+        if(splitCommand[1] && splitCommand[2]){
+          compile(splitCommand[1],splitCommand[2]);
+        }else{
+          echo("Usage: compile source destination");
+        }
+      break;
+      case("execute"):
+        //only use first passed in argument
+        if(splitCommand[1]){
+          var program = parseProgramJson(splitCommand[1]);
+          //execute program
+          execute(program);
+        }else{
+          echo("Usage: execute source");
         }
       break;
       default:

@@ -16,6 +16,7 @@ var mkdirOrTouch = function(str, isDir){
         split.dir.children[split.endSeg] = newFile(split.dir,isDir);
         echo(path() + (isDir ? " mkdir ": " touch ") + str);
         fileSystemChanged();
+        return split.dir.children[split.endSeg];
       }
     }
   }else{
@@ -101,8 +102,12 @@ var mvOrcp = function(sourceStr, destStr, isCopy){
 var extraCommands = function(){
   echo("Unrecognized command \"" + splitCommand[0] + "\"");
 }
-var compile = function(str){
+var compile = function(str,dest){
   //send the file found to the scriptProcessor
-  processScript(dirAtPath(str,"dir").content);
-  echo(path() + " compile " + str);
+  var newFile = mkdirOrTouch(dest,false);
+  if(newFile){
+    newFile.content = JSON.stringify(processScript(dirAtPath(str,"dir").content));
+    fileSystemChanged();
+    echo(path() + " compile " + str);
+  }
 }
