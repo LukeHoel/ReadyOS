@@ -194,6 +194,7 @@ var parseStatement = function(token,parent){
       node.type = token.type;
     break;
   }
+  //for now, you can only do one operation per expression
   //split arthemetic up down here so we catch all statements
   var after = currentToken();//start by getting the next token
   if(after && arthemetic.includes(after.type)){
@@ -202,6 +203,11 @@ var parseStatement = function(token,parent){
     var current = currentToken();
     current.isOp = true;
     operation.children.push(parseStatement(current,operation));
+    if(operation.children[1].type != "FUNCTION_CALL"){
+      nextToken();
+    }else{
+      lastToken();
+    }
     return operation;
   }else{
     return node;
