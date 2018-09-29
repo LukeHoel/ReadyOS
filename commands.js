@@ -30,7 +30,7 @@ var cd = function(str){
     var splitPath = str.split("/");
     if(isValid){
       fileSystem.pwd = str.charAt(0) == '/' ? fileSystem.root : fileSystem.pwd;
-      angular.forEach(splitPath, function(pathSeg){
+      splitPath.forEach(function(pathSeg){
         if(pathSeg){
           if(pathSeg == "."){
             //self reference
@@ -59,7 +59,7 @@ var ls = function(str){
   var dir = dirAtPath(str,"dir");
   var keys = Object.keys(dir.children);
   var ret = "";
-  angular.forEach(keys,function(key){
+  keys.forEach(function(key){
     ret += key + " ";
   });
   echo(ret || path() + " ls " + (str || "/"));
@@ -104,10 +104,12 @@ var extraCommands = function(){
 }
 var compile = function(str,dest){
   //send the file found to the scriptProcessor
-  var newFile = mkdirOrTouch(dest,false);
-  if(newFile){
-    newFile.content = JSON.stringify(processScript(dirAtPath(str,"dir").content));
-    fileSystemChanged();
-    echo(path() + " compile " + str);
+
+    var compiledData = JSON.stringify(processScript(dirAtPath(str,"dir").content));
+    if(compiledData){
+      var newFile = mkdirOrTouch(dest,false);
+      newFile.content = compiledData;
+      fileSystemChanged();
+      echo(path() + " compile " + str);
+    }
   }
-}

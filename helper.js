@@ -3,7 +3,7 @@ function getMyKeyName(child){
   var keys = Object.keys(parent.children);
   var foundDirName;
   //search for a matching directory name, save it and return it at the end
-  angular.forEach(keys,function(currentDirName){
+  keys.forEach(function(currentDirName){
     if(!foundDirName){
       if(parent.children[currentDirName] == child){
         foundDirName = currentDirName;
@@ -18,7 +18,7 @@ function dirAtPath(str, retType){
   var isValid = true;
   //check for leading / which is the root symbol
   var pwdCopy = str.charAt(0) == '/' ? fileSystem.root: fileSystem.pwd;
-  angular.forEach(splitPath, function(pathSeg){
+  splitPath.forEach(function(pathSeg){
     if(pathSeg && isValid){
       if(pathSeg == "."){
         //self reference

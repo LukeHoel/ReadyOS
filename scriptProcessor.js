@@ -26,7 +26,6 @@ var scriptTokenizer = function(script){
     {type: "TERNARY",ex:"\\?"},
     {type: "COLON",ex:"\\:"},
     {type: "COMMA", ex:"\\,"},
-    {type: "DOT", ex:"\\."},
     {type: "EQUAL",ex:"\\="},
     {type: "GREATER",ex:"\\>"},
     {type: "LESSER",ex:"\\<"},
@@ -58,6 +57,8 @@ var scriptTokenizer = function(script){
           //use the earlier regex to match the string and give it a proper token type
           var matcher = new RegExp(word.ex);
           if(token.match(matcher)){
+            //we match the string type using quotes, but we don't need them past here
+            if(word.type == "STRING"){token = token.substring(1, token.length-1);}
             tokens.push({type:word.type, value:token});
             found = true;
           }
@@ -173,15 +174,6 @@ var parseStatement = function(token,parent){
         node.type = "VARIABLE_IDENTIFIER";
       }
     break;
-    case("DOT"):
-      //make sure we are putting a variable accessor on an object of some kind...
-      //shouldn't do anything yet since we don't have objects but hey why not
-      var prev = parent.children[parent.children.length -1];
-      if((prev.type == "FUNCTION_CALL" && prev.returnType == "OBJECT") || prev.type == "OBJECT")
-      node.type = "ATTRIBUTE_ACCESSOR";
-      node.name = assertType(nextToken(),["NAME"]).value;
-      //points up to previous statement or variable
-    break;
     case("RETURN"):
       //for return statements, we only allow simple variable references (no function calls)
       node.type = token.type;
@@ -197,7 +189,7 @@ var parseStatement = function(token,parent){
   //split arthemetic up down here so we catch all statements
   var after = currentToken();//start by getting the next token
   if(after && arthemetic.includes(after.type)){
-    var operation = {type:after.type,children:[node]};
+    var operation = {type: "ARTITHMETIC",operation:after.type,children:[node]};
     nextToken();
     var current = currentToken();
     current.isOp = true;

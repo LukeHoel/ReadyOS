@@ -63,6 +63,11 @@ function processCommand(command){
           echo("Usage: execute source");
         }
       break;
+      case("cat"):
+        for(var i =1; i < splitCommand.length; i ++){
+          echo(dirAtPath(splitCommand[i], "dir").content);
+        }
+      break;
       default:
         //prints unknown command
         extraCommands(splitCommand || command);
