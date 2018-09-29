@@ -1,6 +1,6 @@
 var parseProgramJson = function(path){
   var file = dirAtPath(path,"dir");
-  if(file && !file.isDir){
+  if(file && !file.isDir && file.content){
     var program = JSON.parse(file.content);
     return program;
   }else{
@@ -29,8 +29,7 @@ var evaluateNode = function(node, method, program){
     node.children.forEach(function(child){
       switch(child.type){
         case("VARIABLE_ASSIGNMENT")://register variable
-          if(!method.variables){node.variables = {};}
-          method.variables[child.name] = evaluateNode(child, method, program);
+          setVariable(child, method, program, null);
         break;
         case("STRING"):
         case("NUMBER"):
@@ -38,6 +37,16 @@ var evaluateNode = function(node, method, program){
         break;
         case("FUNCTION_CALL"):
           var func = getFunctionObject(child, method, program);
+          //pass in arguments
+          if(func.parameters){
+            if(func.parameters.length != child.children.length){
+              throw new Error("Wrong number of arguments in call to method " + child.name);
+            }
+            for(var i = 0; i < func.parameters.length; i ++){
+              //fake the structre of a node so we don't need to write new code
+              setVariable({name: func.parameters[i], children:[child.children[i]]}, func, program, method);
+            }
+          }
           ret = evaluateNode(func, func, program); //change method
         break;
         case("VARIABLE_IDENTIFIER"):
@@ -47,6 +56,12 @@ var evaluateNode = function(node, method, program){
     });
   }
   return ret;
+}
+
+var setVariable = function(node, method, program, sourceMethod){
+  if(!method.variables){method.variables = {};}
+  //sourcemethod is when passing variable identifier as parameterS
+  method.variables[node.name] = evaluateNode(node, sourceMethod || method, program);
 }
 
 var getFunctionObject = function(node, method, program){

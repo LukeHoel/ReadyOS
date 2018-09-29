@@ -58,7 +58,9 @@ function processCommand(command){
         if(splitCommand[1]){
           var program = parseProgramJson(splitCommand[1]);
           //execute program
-          execute(program);
+          if(program){
+            execute(program);
+          }
         }else{
           echo("Usage: execute source");
         }
