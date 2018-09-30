@@ -52,6 +52,19 @@ var evaluateNode = function(node, method, program){
         case("VARIABLE_IDENTIFIER"):
           ret = getVariableValue(child.name, method, program);
         break;
+        case("ARITHMETIC"):
+          var evaluatedFirst = evaluateNode({children:[child.children[0]]},method,program);
+          var evaluatedSecond = evaluateNode({children:[child.children[1]]},method,program);
+          var lookUp = {
+            PLUS: "+",
+            MINUS: "-",
+            MULTIPLY: "*",
+            DIVIDE: "/",
+            MODULO: "%"
+          }
+          //construct string to evaluate based on type of operation.
+          ret = eval(evaluatedFirst + lookUp[child.operator] + evaluatedSecond);
+        break;
       }
     });
   }

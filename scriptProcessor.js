@@ -189,14 +189,12 @@ var parseStatement = function(token,parent){
   //split arthemetic up down here so we catch all statements
   var after = currentToken();//start by getting the next token
   if(after && arthemetic.includes(after.type)){
-    var operation = {type: "ARTITHMETIC",operation:after.type,children:[node]};
+    var operation = {type: "ARITHMETIC",operator:after.type,children:[node]};
     nextToken();
     var current = currentToken();
     current.isOp = true;
     operation.children.push(parseStatement(current,operation));
-    if(operation.children[1].type != "FUNCTION_CALL"){
-      nextToken();
-    }else{
+    if(operation.children[1].type == "FUNCTION_CALL"){
       lastToken();
     }
     return operation;
