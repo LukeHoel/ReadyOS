@@ -15,7 +15,7 @@ var scriptTokenizer = function(script){
     {type: "STRING", ex:"\"(.*?)\""},
     {type: "RETURN", ex:"return"},
     {type: "RET_VOID", ex:"void"},
-    {type: "RET_INT", ex:"^int"},
+    {type: "RET_NUMBER", ex:"^number"},
     {type: "RET_STRING", ex:"^string"},
     {type: "IF", ex:"if"},
     {type: "ELSE", ex:"else"},
@@ -37,7 +37,7 @@ var scriptTokenizer = function(script){
     {type: "MODULO", ex:"\\%"},
     {type: "EMPTY", ex:"\/s"}, //exclude empty
     {type: "NAME", ex:"[a-zA-Z_][a-zA-Z0-9_]*"},//put last so we don't false positive other keywords
-    {type: "NUMBER", ex:"\\d+"},
+    {type: "NUMBER", ex:"[+-]?([0-9]*[.])?[0-9]+"},//ok I cheated on stackoverflow for this one. sorry
   ];
   //assemble regular expression
   var regEx = "("
@@ -81,7 +81,7 @@ var tokenParser = function(tokens){
   while(token){
     //function name and parameters
     if(!tempFunction){
-      tempFunction = {returnType: (assertType(tokenIterator.tokens[tokenIterator.currentToken-1],["RET_VOID","RET_INT","RET_STRING"])).type,
+      tempFunction = {returnType: (assertType(tokenIterator.tokens[tokenIterator.currentToken-1],["RET_VOID","RET_NUMBER","RET_STRING"])).type,
       name: assertType(nextToken(), ["NAME"]).value,
       parameters: [],
       tokens:[],
