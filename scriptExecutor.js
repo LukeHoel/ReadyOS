@@ -53,8 +53,6 @@ var evaluateNode = function(node, method, program){
           ret = getVariableValue(child.name, method, program);
         break;
         case("ARITHMETIC"):
-          var evaluatedFirst = evaluateNode({children:[child.children[0]]},method,program);
-          var evaluatedSecond = evaluateNode({children:[child.children[1]]},method,program);
           var lookUp = {
             PLUS: "+",
             MINUS: "-",
@@ -62,6 +60,11 @@ var evaluateNode = function(node, method, program){
             DIVIDE: "/",
             MODULO: "%"
           }
+          var evaluatedFirst = evaluateNode({children:[child.children[0]]},method,program);
+          var evaluatedSecond = evaluateNode({children:[child.children[1]]},method,program);
+          //wrap in extra quotes because so eval doesn't think we want to get a variable
+          if(typeof evaluatedFirst == "string"){evaluatedFirst = "\"" + evaluatedFirst + "\"";}
+          if(typeof evaluatedSecond == "string"){evaluatedSecond = "\"" + evaluatedSecond + "\"";}
           //construct string to evaluate based on type of operation.
           ret = eval(evaluatedFirst + lookUp[child.operator] + evaluatedSecond);
         break;
