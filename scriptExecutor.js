@@ -33,7 +33,8 @@ var evaluateNode = function(node, method, program){
         break;
         case("STRING"):
         case("NUMBER"):
-          ret = child.name;
+          //we want it returned as a number if that is its type
+          ret = child.type == "NUMBER" ? parseFloat(child.name) : child.name;
         break;
         case("FUNCTION_CALL"):
           var func = getFunctionObject(child, method, program);

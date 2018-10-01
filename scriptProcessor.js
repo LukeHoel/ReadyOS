@@ -194,9 +194,9 @@ var parseStatement = function(token,parent){
     var current = currentToken();
     current.isOp = true;
     operation.children.push(parseStatement(current,operation));
-    if(operation.children[1].type == "FUNCTION_CALL"){
-      lastToken();
-    }
+    // if(operation.children[1].type == "FUNCTION_CALL"){
+    //   lastToken();
+    // }
     return operation;
   }else{
     return node;
