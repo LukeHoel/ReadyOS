@@ -67,7 +67,7 @@ var evaluateNode = function(node, method, program){
           if(typeof evaluatedSecond == "string"){evaluatedSecond = "\"" + evaluatedSecond + "\"";}
           //construct string to evaluate based on type of operation.
           ret = eval(evaluatedFirst + lookUp[child.operator] + evaluatedSecond);
-          if(isNaN(ret)){
+          if(ret != ret){
             ret = "NaN";
           }
         break;
