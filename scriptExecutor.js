@@ -33,7 +33,6 @@ var evaluateNode = function(node, method, program){
         break;
         case("STRING"):
         case("NUMBER"):
-          //we want it returned as a number if that is its type
           ret = child.type == "NUMBER" ? parseFloat(child.name) : child.name;
         break;
         case("FUNCTION_CALL"):
@@ -71,6 +70,9 @@ var evaluateNode = function(node, method, program){
           if(ret != ret){
             ret = "NaN";
           }
+        break;
+        case("EXPRESSION"):
+          ret = evaluateNode(child, method, program)
         break;
       }
     });

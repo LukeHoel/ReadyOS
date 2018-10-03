@@ -145,32 +145,18 @@ var parseStatement = function(token,parent){
   switch(token.type){
     case("NAME")://either a variable reference or a function call
       node.name = token.value;
-      if(token.isOp){
-        nextToken();//math operations break the usual flow of parsing, so go back so we can get back to normal
-        delete token["isOp"];
-      }
-      assertType(nextToken(),["LPAREN","COMMA","RPAREN","EQUAL"].concat(arthemetic));//open parenthesis needs to be here, we don't need to check its value though...
-      //check if is function call or variable identifier
-      var action = tokenIterator.tokens[tokenIterator.currentToken-1].type;
+      var action = tokenIterator.tokens[tokenIterator.currentToken].type;
+      //we want to move the cursor over different amounts depending on expression type
       if(action === "LPAREN"){
         node.type = "FUNCTION_CALL";
-        var next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN"]);
-        var more = next.type !== "RPAREN";
-        //loop through and get the parameter tokens out
-        while(more){
-          //yay recursion
-          node.children.push(parseStatement(next,node));
-          next = assertType(nextToken(), ["STRING","NUMBER","NAME", "RPAREN", "COMMA"]);
-          more = next.type === "COMMA";
-          //get the next parameter name ready
-          if(more){next = assertType(nextToken(), ["STRING","NUMBER","NAME"]);}
-        }
-        endIndex = token.currentToken;
+        nextToken();
+        constructStatement(node);
       }else if(action === "EQUAL"){
         node.type = "VARIABLE_ASSIGNMENT";
+        nextToken();
+        nextToken();
         constructStatement(node);
       }else{
-        lastToken();
         node.type = "VARIABLE_IDENTIFIER";
       }
     break;
@@ -184,30 +170,67 @@ var parseStatement = function(token,parent){
       node.name = token.value;
       node.type = token.type;
     break;
-  }
-  //for now, you can only do one operation per expression
-  //split arthemetic up down here so we catch all statements
-  var after = currentToken();//start by getting the next token
-  if(after && arthemetic.includes(after.type)){
-    var operation = {type: "ARITHMETIC",operator:after.type,children:[node]};
-    nextToken();
-    var current = currentToken();
-    current.isOp = true;
-    operation.children.push(parseStatement(current,operation));
-    // if(operation.children[1].type == "FUNCTION_CALL"){
-    //   lastToken();
-    // }
-    return operation;
-  }else{
+    }
     return node;
   }
-}
+
 var constructStatement = function(node){
-  assertType(nextToken(),["LPAREN"]);
-  var next = nextToken();
-  node.children.push(parseStatement(next,node));
-  assertType(nextToken(),["RPAREN"]);
+  var counter = 1;
+  var curTok = nextToken();
+  while(counter > 0){
+    if(curTok.type == "LPAREN"){
+      var child = {type: "EXPRESSION", children : []};
+      constructStatement(child);
+      node.children.push(child);
+    }else if(curTok.type == "RPAREN"){
+      counter --;
+    }
+    else{
+      node.children.push(parseStatement(curTok,node));
+    }
+    curTok = nextToken();
+  }
+  lastToken();
+  applyGrouping(node);
 }
+
+//group ARITHMETIC operations together
+var applyGrouping = function(node){
+  var newChildren = [];
+  var arthemeticOperationCount = 0;
+  node.children.forEach(function(child){
+    if(arthemetic.includes(child.type)){
+      arthemeticOperationCount ++;
+      if(arthemeticOperationCount > 1){
+        throw new SyntaxError("Only one arthemetic operation is allowed per expression");
+      }
+    }
+  });
+  for(var i = 0;i<node.children.length;i++){
+    if(arthemetic.includes(node.children[i].type)){
+      //check if there are two available objects to insert where
+      //left comes from newChildren array
+      //Right comes from node children
+      var left = newChildren[i-1];
+      var right = node.children[i+1];
+      if(left && right){
+        //make use of the already in array value, so we don't have to delete
+        var leftCopy = copy(left);
+        delete left["name"];
+        left.type = "ARITHMETIC";
+        left.operator = node.children[i].type;
+        left.children = [leftCopy,right];
+        i++;
+      }else{
+        throw new SyntaxError("Arthemetic operations require two operands");
+      }
+    }else{
+      newChildren.push(copy(node.children[i]));
+    }
+  }
+  node.children = newChildren;
+}
+
 var currentToken = function(){
   return tokenIterator.tokens[tokenIterator.currentToken];
 }
