@@ -10,7 +10,7 @@ var parseProgramJson = function(path){
 var execute = function(program){
   //search for and run main function with return type int
   program.forEach(function(func){
-    if(func.name == "main" && func.returnType == "RET_VOID"){
+    if(func.name == "main"){
       program.main = func;
     }
   });
@@ -71,6 +71,7 @@ var evaluateNode = function(node, method, program){
             ret = "NaN";
           }
         break;
+        case("RETURN"):
         case("EXPRESSION"):
           ret = evaluateNode(child, method, program)
         break;
@@ -92,16 +93,16 @@ var getFunctionObject = function(node, method, program){
     if(!ret){
     program.forEach(function(func){
       if(func.name == node.name){
-        ret = func;//we want a copy, so we can copy multiple times without memory leak
+        ret = func;
       }
     });
-    if(!ret){throw new Error("Method with name " + node.name + " not found")}
+    if(!ret){throw new Error("Method with name " + node.name + " not found, or an error occured in evaluation")}
   }
   return JSON.parse(JSON.stringify(ret));
 }
 
 var getVariableValue = function(varName, node, method){
-  if(node.variables){
+  if(node.variables[varName]){
     return node.variables[varName];
   }else{
     throw new Error("Variable with name " + varName + " not found");
@@ -112,7 +113,7 @@ var reservedFunctions = function(node, method, program){
   var ret;
   switch(node.name){
     case("print"):
-      ret = evaluateNode(node, method, program);
+      ret = evaluateNode(node, method, program) || " ";//dont return null, return space
       echo(ret);
     break;
   }

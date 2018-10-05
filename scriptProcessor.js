@@ -14,9 +14,7 @@ var scriptTokenizer = function(script){
   var keyWords = [
     {type: "STRING", ex:"\"(.*?)\""},
     {type: "RETURN", ex:"return"},
-    {type: "RET_VOID", ex:"void"},
-    {type: "RET_NUMBER", ex:"^number"},
-    {type: "RET_STRING", ex:"^string"},
+    {type: "FUNCTION", ex:"function"},
     {type: "IF", ex:"if"},
     {type: "ELSE", ex:"else"},
     {type: "LBRACE", ex:"\\{"},
@@ -81,7 +79,8 @@ var tokenParser = function(tokens){
   while(token){
     //function name and parameters
     if(!tempFunction){
-      tempFunction = {returnType: (assertType(tokenIterator.tokens[tokenIterator.currentToken-1],["RET_VOID","RET_NUMBER","RET_STRING"])).type,
+      assertType(tokenIterator.tokens[tokenIterator.currentToken-1],["FUNCTION"]);
+      tempFunction = {
       name: assertType(nextToken(), ["NAME"]).value,
       parameters: [],
       tokens:[],
@@ -149,11 +148,13 @@ var parseStatement = function(token,parent){
       //we want to move the cursor over different amounts depending on expression type
       if(action === "LPAREN"){
         node.type = "FUNCTION_CALL";
+        assertType(currentToken(),["LPAREN"]);
         nextToken();
         constructStatement(node);
       }else if(action === "EQUAL"){
         node.type = "VARIABLE_ASSIGNMENT";
         nextToken();
+        assertType(currentToken(),["LPAREN"]);
         nextToken();
         constructStatement(node);
       }else{
@@ -177,7 +178,7 @@ var parseStatement = function(token,parent){
 var constructStatement = function(node){
   var counter = 1;
   var curTok = nextToken();
-  while(counter > 0){
+  while(curTok && counter > 0){
     if(curTok.type == "LPAREN"){
       var child = {type: "EXPRESSION", children : []};
       constructStatement(child);
@@ -185,7 +186,7 @@ var constructStatement = function(node){
     }else if(curTok.type == "RPAREN"){
       counter --;
     }
-    else{
+    else if(curTok.type != "COMMA"){
       node.children.push(parseStatement(curTok,node));
     }
     curTok = nextToken();
