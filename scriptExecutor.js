@@ -37,17 +37,24 @@ var evaluateNode = function(node, method, program){
         break;
         case("FUNCTION_CALL"):
           var func = getFunctionObject(child, method, program);
-          //pass in arguments
-          if(func.parameters){
-            if(func.parameters.length != child.children.length){
-              throw new Error("Wrong number of arguments in call to method " + child.name);
+          switch(func.type){
+            case ("scan"):
+              ret = func.content;
+            break;
+            default:
+            //pass in arguments
+            if(func.parameters){
+              if(func.parameters.length != child.children.length){
+                throw new Error("Wrong number of arguments in call to method " + child.name);
+              }
+              for(var i = 0; i < func.parameters.length; i ++){
+                //fake the structre of a node so we don't need to write new code
+                setVariable({name: func.parameters[i], children:[child.children[i]]}, func, program, method);
+              }
             }
-            for(var i = 0; i < func.parameters.length; i ++){
-              //fake the structre of a node so we don't need to write new code
-              setVariable({name: func.parameters[i], children:[child.children[i]]}, func, program, method);
-            }
-          }
-          ret = evaluateNode(func, func, program); //change method
+            ret = evaluateNode(func, func, program); //change method
+          break;
+        }
         break;
         case("VARIABLE_IDENTIFIER"):
           ret = getVariableValue(child.name, method, program);
@@ -84,7 +91,8 @@ var evaluateNode = function(node, method, program){
 var setVariable = function(node, method, program, sourceMethod){
   if(!method.variables){method.variables = {};}
   //sourcemethod is when passing variable identifier as parameterS
-  method.variables[node.name] = evaluateNode(node, sourceMethod || method, program);
+  var test = evaluateNode(node, sourceMethod || method, program);
+  method.variables[node.name] = test;
 }
 
 var getFunctionObject = function(node, method, program){
@@ -116,6 +124,13 @@ var reservedFunctions = function(node, method, program){
       ret = evaluateNode(node, method, program) || " ";//dont return null, return space
       echo(ret);
     break;
+    case("scan"):
+      ret = {type: "scan", content: getUserInput(evaluateNode(node, method, program))};
+    break;
   }
   return ret;
+}
+
+var getUserInput = function(question){
+  return prompt(question);
 }
