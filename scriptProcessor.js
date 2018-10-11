@@ -4,8 +4,8 @@ var processScript = function(script){
   //pass tokens to parser
   try{
     return tokenParser(tokenizedScript);
-  }catch(error){
-    echo(error.message);
+  }catch(err){
+    error(err.message);
   }
 }
 var scriptTokenizer = function(script){

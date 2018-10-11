@@ -1,0 +1,2 @@
+errorColor = "red";
+successColor = "green";

@@ -1,5 +1,5 @@
-var echo = function(str){
-  console.log(str);
+var echo = function(str, color){
+  console.log(str, "color: " + color);
 }
 var fileSystemChanged = function(){
   //called when file system is changed... override something here in implementation
@@ -14,7 +14,7 @@ var mkdirOrTouch = function(str, isDir){
         echo("Directory \""+ str +"\" already exists");
       }else{
         split.dir.children[split.endSeg] = newFile(split.dir,isDir);
-        echo(path() + (isDir ? " mkdir ": " touch ") + str);
+        echo(path() + (isDir ? " mkdir ": " touch ") + str, successColor);
         fileSystemChanged();
         return split.dir.children[split.endSeg];
       }
@@ -110,6 +110,6 @@ var compile = function(str,dest){
       var newFile = mkdirOrTouch(dest,false);
       newFile.content = compiledData;
       fileSystemChanged();
-      echo(path() + " compile " + str);
+      echo(path() + " compile " + str,successColor);
     }
   }

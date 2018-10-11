@@ -45,7 +45,7 @@ var evaluateNode = function(node, method, program){
             //pass in arguments
             if(func.parameters){
               if(func.parameters.length != child.children.length){
-                throw new Error("Wrong number of arguments in call to method " + child.name);
+                paramsError(child.name);
               }
               for(var i = 0; i < func.parameters.length; i ++){
                 //fake the structre of a node so we don't need to write new code
@@ -121,8 +121,15 @@ var reservedFunctions = function(node, method, program){
   var ret;
   switch(node.name){
     case("print"):
-      ret = evaluateNode(node, method, program) || " ";//dont return null, return space
-      echo(ret);
+      if(node.children.length < 1 || node.children.length > 2){
+        paramsError(node.name);
+      }
+      ret = evaluateNode({children:[node.children[0]]}, method, program) || " ";//dont return null, return space
+      var color = "";
+      if(node.children[1]){//color of print statement
+        color = evaluateNode({children:[node.children[1]]}, method, program);
+      }
+      echo(ret,color);
     break;
     case("scan"):
       ret = {type: "scan", content: getUserInput(evaluateNode(node, method, program))};
