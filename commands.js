@@ -14,7 +14,7 @@ var mkdirOrTouch = function(str, isDir){
         echo("Directory \""+ str +"\" already exists");
       }else{
         split.dir.children[split.endSeg] = newFile(split.dir,isDir);
-        echo(path() + (isDir ? " mkdir ": " touch ") + str, successColor);
+        echo(path() + (isDir ? " mkdir ": " touch ") + str);
         fileSystemChanged();
         return split.dir.children[split.endSeg];
       }
