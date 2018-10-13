@@ -42,6 +42,7 @@ var evaluateNode = function(node, method, program){
             case("arrayDef"):
             case("arrayValue"):
             case("andor"):
+            case("command"):
               ret = func.content;
             break;
             default:
@@ -209,6 +210,14 @@ var reservedFunctions = function(node, method, program){
       var first = evaluateNode({children:[node.children[0]]}, method, program);
       var second = evaluateNode({children:[node.children[1]]}, method, program);
       ret = {type:"andor", content: (node.name == "and") ? (first && second) : (first || second)};
+    break;
+    case("command"):
+      var len = node.children.length;
+      if(len != 1){
+        paramsError(node.name);
+      }
+      processCommand(evaluateNode({children:[node.children[0]]}, method, program));
+      ret = {type:"command", content: ""};
     break;
   }
   return ret;
