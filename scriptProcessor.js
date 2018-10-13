@@ -6,6 +6,7 @@ var processScript = function(script){
     return tokenParser(tokenizedScript);
   }catch(err){
     error(err.message);
+    console.error(err);
   }
 }
 var scriptTokenizer = function(script){
@@ -17,6 +18,7 @@ var scriptTokenizer = function(script){
     {type: "FUNCTION", ex:"function"},
     {type: "IF", ex:"if"},
     {type: "ELSE", ex:"else"},
+    {type: "WHILE", ex:"while"},
     {type: "LBRACE", ex:"\\{"},
     {type: "RBRACE", ex:"\\}"},
     {type: "LPAREN",ex:"\\("},
@@ -24,10 +26,11 @@ var scriptTokenizer = function(script){
     {type: "TERNARY",ex:"\\?"},
     {type: "COLON",ex:"\\:"},
     {type: "COMMA", ex:"\\,"},
+    {type: "EQUALEQUAL",ex:"\\=="},
     {type: "EQUAL",ex:"\\="},
     {type: "GREATER",ex:"\\>"},
     {type: "LESSER",ex:"\\<"},
-    {type: "NOT",ex:"\\!"},
+    {type: "NOT",ex:"\\!="},
     {type: "PLUS", ex:"\\+"},
     {type: "MINUS", ex:"\\-"},
     {type: "MULTIPLY", ex:"\\*"},
@@ -130,7 +133,10 @@ var tokenParser = function(tokens){
     tokenIterator = {tokens:func.tokens, currentToken:0};
     token = nextToken();
     while(token){//different starting character types of expressions
-      func.children.push(parseStatement(token,func));
+      var statement = parseStatement(token,func);
+      if(statement.blockType != "ELSE"){//else is added into the prior if
+        func.children.push(statement);
+      }
       token = nextToken();
     }
     delete func["tokens"];
@@ -139,6 +145,7 @@ var tokenParser = function(tokens){
 }
 //groups of inputs
 var arthemetic = ["PLUS","MINUS","MULTIPLY","DIVIDE","MODULO"];
+var comparator = ["EQUALEQUAL", "LESSER", "GREATER", "NOT"];
 var parseStatement = function(token,parent){
   var node = {name: "", type: "", children : []};
   switch(token.type){
@@ -167,6 +174,26 @@ var parseStatement = function(token,parent){
       constructStatement(node);
       delete node["name"];
     break;
+    case("IF"):
+    case("WHILE"):
+      node.type = "BLOCK";
+      node.blockType = token.type;
+      node.statement = {name: "", type: "", children : []};
+      parseExpression(node.statement);
+      constructCodeBlock(node);
+      delete node["name"];
+    break;
+    case("ELSE"):
+      node.type = "BLOCK";
+      node.blockType = "ELSE";
+      var prev = parent.children[parent.children.length-1];
+      if(prev.type != "BLOCK" || prev.blockType != "IF"){
+        throw new Error("Else Statements can only be after if statements");
+      }
+      constructCodeBlock(node);
+      prev.else = node;//add else to statement
+      delete node["name"];
+    break;
     default:
       node.name = token.value;
       node.type = token.type;
@@ -174,6 +201,31 @@ var parseStatement = function(token,parent){
     }
     return node;
   }
+  var parseExpression = function(node){
+    assertType(nextToken(),["LPAREN"]);
+    var curTok = nextToken();
+    while(curTok){
+      if(curTok.type == "RPAREN"){
+        break;
+      }else{
+        node.children.push(parseStatement(curTok, node));
+      }
+      curTok = nextToken();
+    }
+    applyGrouping(node);
+  }
+var constructCodeBlock = function(node){
+  assertType(nextToken(),["LBRACE"]);
+  var curTok = nextToken();
+  while(curTok){
+    if(curTok.type == "RBRACE"){
+      break;
+    }else{
+      node.children.push(parseStatement(curTok, node));
+    }
+    curTok = nextToken();
+  }
+}
 
 var constructStatement = function(node){
   var counter = 1;
@@ -198,17 +250,19 @@ var constructStatement = function(node){
 //group ARITHMETIC operations together
 var applyGrouping = function(node){
   var newChildren = [];
-  var arthemeticOperationCount = 0;
+  var operationCount = 0;
   node.children.forEach(function(child){
     if(arthemetic.includes(child.type)){
-      arthemeticOperationCount ++;
-      if(arthemeticOperationCount > 1){
+      operationCount ++;
+      if(operationCount > 1){
         throw new SyntaxError("Only one arthemetic operation is allowed per expression");
       }
     }
   });
   for(var i = 0;i<node.children.length;i++){
-    if(arthemetic.includes(node.children[i].type)){
+    var isArthemetic = arthemetic.includes(node.children[i].type);
+    var isComparator = comparator.includes(node.children[i].type);
+    if(isArthemetic || isComparator){
       //check if there are two available objects to insert where
       //left comes from newChildren array
       //Right comes from node children
@@ -218,12 +272,12 @@ var applyGrouping = function(node){
         //make use of the already in array value, so we don't have to delete
         var leftCopy = copy(left);
         delete left["name"];
-        left.type = "ARITHMETIC";
+        left.type = isArthemetic ? "ARITHMETIC" : "COMPARATOR";
         left.operator = node.children[i].type;
         left.children = [leftCopy,right];
         i++;
       }else{
-        throw new SyntaxError("Arthemetic operations require two operands");
+        throw new SyntaxError("Arthemetic/Comparator operations require two operands");
       }
     }else{
       newChildren.push(copy(node.children[i]));

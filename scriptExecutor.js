@@ -41,6 +41,7 @@ var evaluateNode = function(node, method, program){
             case ("scan"):
             case("arrayDef"):
             case("arrayValue"):
+            case("andor"):
               ret = func.content;
             break;
             default:
@@ -80,9 +81,40 @@ var evaluateNode = function(node, method, program){
             ret = "NaN";
           }
         break;
+        case("COMPARATOR"):
+          var lookUp = {
+            EQUALEQUAL: "==",
+            LESSER: "<",
+            GREATER: ">",
+            NOTEQUAL: "!="
+          }
+          var evaluatedFirst = evaluateNode({children:[child.children[0]]},method,program);
+          var evaluatedSecond = evaluateNode({children:[child.children[1]]},method,program);
+          //wrap in extra quotes because so eval doesn't think we want to get a variable
+          if(typeof evaluatedFirst == "string"){evaluatedFirst = "\"" + evaluatedFirst + "\"";}
+          if(typeof evaluatedSecond == "string"){evaluatedSecond = "\"" + evaluatedSecond + "\"";}
+          //construct string to evaluate based on type of operation.
+          ret = eval(evaluatedFirst + lookUp[child.operator] + evaluatedSecond);
+        break;
         case("RETURN"):
         case("EXPRESSION"):
           ret = evaluateNode(child, method, program)
+        break;
+        case("BLOCK"):
+          switch(child.blockType){
+            case("IF"):
+              if(evaluateNode(child.statement,method,program)){
+                evaluateNode(child, method, program);
+              }else if("else" in child){//elses are grouped as part of ifs
+                evaluateNode(child.else, method, program);
+              }
+            break;
+            case("WHILE"):
+              while(evaluateNode(child.statement,method,program)){
+                evaluateNode(child, method, program);
+              }
+            break;
+          }
         break;
       }
     });
@@ -112,7 +144,7 @@ var getFunctionObject = function(node, method, program){
 }
 
 var getVariableValue = function(varName, node, method){
-  if(node.variables[varName]){
+  if(varName in node.variables){
     return node.variables[varName];
   }else{
     throw new Error("Variable with name " + varName + " not found");
@@ -136,6 +168,9 @@ var reservedFunctions = function(node, method, program){
     break;
     case("scan"):
       ret = {type: "scan", content: getUserInput(evaluateNode(node, method, program))};
+      if(!isNaN(ret.content)){
+        ret.content = parseInt(ret.content);
+      }
     break;
     case("arrayDef"):
       var arr = [];
@@ -164,7 +199,16 @@ var reservedFunctions = function(node, method, program){
         arr[index] = evaluateNode({children:[node.children[2]]}, method, program);
       }
       ret = {type: "arrayValue", content: arr[index]}//return value regardless
-
+    break;
+    case("and"):
+    case("or"):
+    //takes two params, first expression and second expression
+      if(len < 1 || len > 2){
+        paramsError(node.name);
+      }
+      var first = evaluateNode({children:[node.children[0]]}, method, program);
+      var second = evaluateNode({children:[node.children[1]]}, method, program);
+      ret = {type:"andor", content: (node.name == "and") ? (first && second) : (first || second)};
     break;
   }
   return ret;

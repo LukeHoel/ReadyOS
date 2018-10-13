@@ -63,6 +63,7 @@ function processCommand(command){
             execute(program);
           }catch(error){
             echo(error.message, errorColor);
+            console.error(error);
           }
           }
         }else{
