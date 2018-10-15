@@ -113,3 +113,9 @@ var compile = function(str,dest){
       echo(path() + " compile " + str,successColor);
     }
   }
+var getContent = function(sourceStr){
+  echo(dirAtPath(sourceStr));
+}
+var setContent = function(sourceStr, newContent){
+  dirAtPath(sourceStr).content = newContent;
+}
