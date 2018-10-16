@@ -27,7 +27,7 @@ function dirAtPath(str, retType){
       else if(pathSeg == ".."){
         pwdCopy = pwdCopy.parentDir;
       }
-      else if(pwdCopy.children[pathSeg]){
+      else if(pwdCopy && pwdCopy.children[pathSeg]){
         pwdCopy = pwdCopy.children[pathSeg];
       }else{
         isValid = false;

@@ -114,7 +114,7 @@ var compile = function(str,dest){
     }
   }
 var getContent = function(sourceStr){
-  echo(dirAtPath(sourceStr));
+  return dirAtPath(sourceStr).content;
 }
 var setContent = function(sourceStr, newContent){
   dirAtPath(sourceStr).content = newContent;

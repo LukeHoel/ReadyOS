@@ -1,7 +1,8 @@
 var fileSystem = {
   root : {children:{},  isDirectory : true},
-  pwd : null, //set this to files on startup
+  pwd : null,
 }
+fileSystem.pwd = fileSystem.root;//set to root to start off with
 function newFile(parentDir, isDirectory){
   return {parentDir:parentDir,isDirectory:isDirectory, children: {}, content : ""}
 }
